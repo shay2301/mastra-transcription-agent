@@ -1,6 +1,7 @@
 import FormData from 'form-data';
 import fs from 'fs';
 import { Readable } from 'stream';
+import { File } from 'buffer';
 
 export interface TranscribeOptions {
   language?: string;
@@ -63,6 +64,7 @@ export class OpenRouterClient {
   ): Promise<WhisperResponse> {
     const formData = new FormData();
 
+    // Append file buffer directly with proper options
     formData.append('file', buffer, {
       filename,
       contentType: this.getMimeType(filename),
