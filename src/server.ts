@@ -17,9 +17,27 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Validate required environment variables
-if (!process.env.OPENROUTER_API_KEY) {
-  console.error('ERROR: OPENROUTER_API_KEY is required');
+const apiKey = process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY;
+const baseUrl = process.env.GROQ_API_KEY
+  ? (process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1')
+  : process.env.OPENROUTER_BASE_URL;
+const model = process.env.GROQ_API_KEY
+  ? (process.env.GROQ_MODEL || 'whisper-large-v3')
+  : process.env.OPENROUTER_MODEL;
+
+if (!apiKey) {
+  console.error('ERROR: GROQ_API_KEY or OPENROUTER_API_KEY is required');
+  console.error('\n🔑 Get a FREE Groq API key at: https://console.groq.com');
+  console.error('   See GROQ_SETUP.md for step-by-step instructions\n');
   process.exit(1);
+}
+
+if (process.env.GROQ_API_KEY) {
+  console.log('[Config] ✅ Using Groq API for Whisper transcription');
+} else {
+  console.warn('[Config] ⚠️  Using OpenRouter - may not support Whisper audio API');
+  console.warn('[Config] 💡 For best results, get a FREE Groq key: https://console.groq.com');
+  console.warn('[Config] 📖 See GROQ_SETUP.md for instructions');
 }
 
 // Configuration
@@ -31,15 +49,15 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,h
 
 // Initialize services
 const openRouterClient = new OpenRouterClient(
-  process.env.OPENROUTER_API_KEY,
-  process.env.OPENROUTER_BASE_URL,
-  process.env.OPENROUTER_MODEL
+  apiKey,
+  baseUrl,
+  model
 );
 
 const agent = new TranscriberAgent(
-  process.env.OPENROUTER_API_KEY,
-  process.env.OPENROUTER_BASE_URL,
-  process.env.OPENROUTER_MODEL,
+  apiKey,
+  baseUrl,
+  model,
   parseFloat(process.env.MAX_FILE_SIZE_MB || '19.5')
 );
 
