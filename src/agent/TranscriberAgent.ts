@@ -1,4 +1,3 @@
-import { Agent } from '@mastra/core';
 import fs from 'fs';
 import path from 'path';
 import { OpenRouterClient, TranscribeOptions } from '../services/openrouter.js';
@@ -30,7 +29,11 @@ export interface LiveSessionData {
   startTime: number;
 }
 
-export class TranscriberAgent extends Agent {
+/**
+ * Transcription Agent
+ * Handles file and live audio transcription using Whisper via OpenRouter
+ */
+export class TranscriberAgent {
   private openRouter: OpenRouterClient;
   private audioProcessor: AudioProcessor;
   private merger: TranscriptMerger;
@@ -43,11 +46,6 @@ export class TranscriberAgent extends Agent {
     model?: string,
     maxSizeMB = 19.5
   ) {
-    super({
-      name: 'transcriber',
-      instructions: 'Transcribe audio files and live streams using Whisper via OpenRouter',
-    });
-
     this.openRouter = new OpenRouterClient(apiKey, baseUrl, model);
     this.audioProcessor = new AudioProcessor(maxSizeMB);
     this.merger = new TranscriptMerger();
@@ -56,81 +54,10 @@ export class TranscriberAgent extends Agent {
 
     // Ensure data directory exists
     if (!fs.existsSync(this.dataDir)) {
-      fs.mkdirSync(this.dataDir, { recursive: true });
+      fs.mkdirSync(this.dataDir, { recursive: true});
     }
 
-    this.registerSkills();
-  }
-
-  private registerSkills() {
-    // Skill: transcribeFile
-    this.addSkill({
-      name: 'transcribeFile',
-      description: 'Transcribe an audio file with automatic size handling',
-      parameters: {
-        type: 'object',
-        properties: {
-          filePath: { type: 'string', description: 'Path to audio file' },
-          language: { type: 'string', description: 'Language code (he, en, auto)' },
-          timestamps: { type: 'string', enum: ['segments', 'word', 'none'], description: 'Timestamp granularity' },
-        },
-        required: ['filePath'],
-      },
-      execute: async ({ filePath, language = 'auto', timestamps = 'segments' }) => {
-        return this.transcribeFile(filePath, { language, timestamps });
-      },
-    });
-
-    // Skill: startLiveSession
-    this.addSkill({
-      name: 'startLiveSession',
-      description: 'Start a live transcription session',
-      parameters: {
-        type: 'object',
-        properties: {
-          sessionId: { type: 'string', description: 'Unique session identifier' },
-          language: { type: 'string', description: 'Language code' },
-        },
-        required: ['sessionId'],
-      },
-      execute: async ({ sessionId, language = 'auto' }) => {
-        return this.startLiveSession(sessionId, language);
-      },
-    });
-
-    // Skill: ingestAudioFrame
-    this.addSkill({
-      name: 'ingestAudioFrame',
-      description: 'Ingest an audio frame into a live session',
-      parameters: {
-        type: 'object',
-        properties: {
-          sessionId: { type: 'string', description: 'Session identifier' },
-          frame: { type: 'string', description: 'Base64 encoded audio frame' },
-        },
-        required: ['sessionId', 'frame'],
-      },
-      execute: async ({ sessionId, frame }) => {
-        const buffer = Buffer.from(frame, 'base64');
-        return this.ingestAudioFrame(sessionId, buffer);
-      },
-    });
-
-    // Skill: finalizeSession
-    this.addSkill({
-      name: 'finalizeSession',
-      description: 'Finalize a live transcription session',
-      parameters: {
-        type: 'object',
-        properties: {
-          sessionId: { type: 'string', description: 'Session identifier' },
-        },
-        required: ['sessionId'],
-      },
-      execute: async ({ sessionId }) => {
-        return this.finalizeSession(sessionId);
-      },
-    });
+    console.log('[Agent] Transcriber Agent initialized');
   }
 
   /**
