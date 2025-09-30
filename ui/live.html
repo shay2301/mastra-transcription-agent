@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Captions - Mastra Transcriber</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .header {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .nav {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .nav a {
+        padding: 8px 16px;
+        background: #f0f0f0;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #333;
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+
+      .nav a:hover {
+        background: #e0e0e0;
+      }
+
+      .nav a.active {
+        background: #667eea;
+        color: white;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .start-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .start-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+      }
+
+      .stop-btn {
+        background: #f44336;
+        color: white;
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .status.disconnected {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .status.connected {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      .status.recording {
+        background: #fff3e0;
+        color: #e65100;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      .captions-area {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        min-height: 400px;
+        max-height: 600px;
+        overflow-y: auto;
+      }
+
+      .caption {
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        animation: fadeIn 0.3s;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .caption.partial {
+        background: #f5f5f5;
+        border-left: 3px solid #999;
+        opacity: 0.7;
+      }
+
+      .caption.final {
+        background: #e3f2fd;
+        border-left: 3px solid #1976d2;
+      }
+
+      .caption-time {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 5px;
+        font-weight: 600;
+      }
+
+      .caption-text {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #333;
+      }
+
+      .actions {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        display: flex;
+        gap: 10px;
+      }
+
+      .copy-btn,
+      .download-btn {
+        flex: 1;
+        padding: 12px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .download-btn {
+        background: #2196f3;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+      }
+
+      .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+      }
+
+      select {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+      }
+
+      .rtl {
+        direction: rtl;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎙️ Live Captions</h1>
+
+        <div class="nav">
+          <a href="/">Upload</a>
+          <a href="/live.html" class="active">Live Captions</a>
+        </div>
+
+        <div class="controls">
+          <button class="start-btn" id="startBtn">🎤 Start Capture</button>
+          <button class="stop-btn" id="stopBtn" disabled>⏹️ Stop</button>
+          <select id="languageSelect">
+            <option value="auto">Auto-detect</option>
+            <option value="en">English</option>
+            <option value="he">Hebrew</option>
+          </select>
+          <span class="status disconnected" id="statusBadge">● Disconnected</span>
+        </div>
+      </div>
+
+      <div class="captions-area" id="captionsArea">
+        <div class="empty-state">
+          <div class="empty-state-icon">🎧</div>
+          <h3>Ready to capture live audio</h3>
+          <p style="margin-top: 10px;">Click "Start Capture" to begin streaming transcription</p>
+          <p style="margin-top: 20px; font-size: 13px; color: #666;">
+            Make sure your microphone is connected and allowed in browser settings
+          </p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="copy-btn" id="copyBtn">📋 Copy Transcript</button>
+        <button class="download-btn" id="downloadBtn">💾 Download VTT</button>
+      </div>
+    </div>
+
+    <script>
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const statusBadge = document.getElementById('statusBadge');
+      const captionsArea = document.getElementById('captionsArea');
+      const languageSelect = document.getElementById('languageSelect');
+      const copyBtn = document.getElementById('copyBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+
+      let ws = null;
+      let mediaStream = null;
+      let audioContext = null;
+      let processor = null;
+      let sessionId = null;
+      let captions = [];
+
+      startBtn.addEventListener('click', startCapture);
+      stopBtn.addEventListener('click', stopCapture);
+      copyBtn.addEventListener('click', copyTranscript);
+      downloadBtn.addEventListener('click', downloadVTT);
+
+      async function startCapture() {
+        try {
+          // Request microphone access
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              sampleRate: 16000,
+              channelCount: 1,
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+          });
+
+          // Setup audio context
+          audioContext = new (window.AudioContext || window.webkitAudioContext)({
+            sampleRate: 16000,
+          });
+
+          const source = audioContext.createMediaStreamSource(mediaStream);
+          processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+          // Connect WebSocket
+          sessionId = 'session_' + Date.now();
+          const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+          ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+          ws.onopen = () => {
+            console.log('WebSocket connected');
+            statusBadge.className = 'status connected';
+            statusBadge.textContent = '● Connected';
+
+            // Send start message
+            ws.send(
+              JSON.stringify({
+                type: 'start',
+                sessionId,
+                language: languageSelect.value,
+              })
+            );
+          };
+
+          ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            handleWSMessage(message);
+          };
+
+          ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            stopCapture();
+          };
+
+          ws.onclose = () => {
+            console.log('WebSocket closed');
+            statusBadge.className = 'status disconnected';
+            statusBadge.textContent = '● Disconnected';
+          };
+
+          // Process audio
+          processor.onaudioprocess = (e) => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              const inputData = e.inputBuffer.getChannelData(0);
+              const pcm16 = float32ToPCM16(inputData);
+
+              ws.send(
+                JSON.stringify({
+                  type: 'audio',
+                  chunk: arrayBufferToBase64(pcm16.buffer),
+                })
+              );
+            }
+          };
+
+          source.connect(processor);
+          processor.connect(audioContext.destination);
+
+          // Update UI
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+          statusBadge.className = 'status recording';
+          statusBadge.textContent = '● Recording';
+          captionsArea.innerHTML = '';
+          captions = [];
+        } catch (error) {
+          console.error('Failed to start capture:', error);
+          alert('Failed to access microphone: ' + error.message);
+        }
+      }
+
+      function stopCapture() {
+        // Stop audio
+        if (processor) {
+          processor.disconnect();
+          processor = null;
+        }
+
+        if (audioContext) {
+          audioContext.close();
+          audioContext = null;
+        }
+
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          mediaStream = null;
+        }
+
+        // Close WebSocket
+        if (ws) {
+          ws.send(JSON.stringify({ type: 'stop' }));
+          ws.close();
+          ws = null;
+        }
+
+        // Update UI
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusBadge.className = 'status disconnected';
+        statusBadge.textContent = '● Disconnected';
+      }
+
+      function handleWSMessage(message) {
+        if (message.type === 'partial') {
+          addCaption(message, false);
+        } else if (message.type === 'final') {
+          addCaption(message, true);
+        } else if (message.type === 'error') {
+          console.error('Server error:', message.error);
+        } else if (message.type === 'stopped') {
+          console.log('Session stopped, final transcript available');
+        }
+      }
+
+      function addCaption(data, isFinal) {
+        const caption = {
+          text: data.text,
+          time: new Date().toLocaleTimeString(),
+          tsStart: data.tsStart,
+          tsEnd: data.tsEnd,
+          isFinal,
+        };
+
+        if (isFinal) {
+          captions.push(caption);
+        }
+
+        const captionEl = document.createElement('div');
+        captionEl.className = `caption ${isFinal ? 'final' : 'partial'}`;
+
+        const isRTL = languageSelect.value === 'he';
+        if (isRTL) {
+          captionEl.classList.add('rtl');
+        }
+
+        captionEl.innerHTML = `
+          <div class="caption-time">${caption.time} ${isFinal ? '(Final)' : '(Partial)'}</div>
+          <div class="caption-text">${caption.text}</div>
+        `;
+
+        if (isFinal) {
+          captionsArea.appendChild(captionEl);
+        } else {
+          // Replace last partial or add new
+          const lastPartial = captionsArea.querySelector('.caption.partial:last-child');
+          if (lastPartial) {
+            lastPartial.replaceWith(captionEl);
+          } else {
+            captionsArea.appendChild(captionEl);
+          }
+        }
+
+        // Auto-scroll
+        captionsArea.scrollTop = captionsArea.scrollHeight;
+      }
+
+      function copyTranscript() {
+        const text = captions.map((c) => c.text).join(' ');
+        navigator.clipboard.writeText(text).then(() => {
+          copyBtn.textContent = '✅ Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = '📋 Copy Transcript';
+          }, 2000);
+        });
+      }
+
+      function downloadVTT() {
+        let vtt = 'WEBVTT\n\n';
+
+        captions.forEach((caption, i) => {
+          vtt += `${i + 1}\n`;
+          vtt += `${formatTime(caption.tsStart)} --> ${formatTime(caption.tsEnd)}\n`;
+          vtt += `${caption.text}\n\n`;
+        });
+
+        const blob = new Blob([vtt], { type: 'text/vtt' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `live_transcript_${sessionId}.vtt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function formatTime(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 1000);
+        return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms, 3)}`;
+      }
+
+      function pad(n, len = 2) {
+        return n.toString().padStart(len, '0');
+      }
+
+      function float32ToPCM16(float32Array) {
+        const pcm16 = new Int16Array(float32Array.length);
+        for (let i = 0; i < float32Array.length; i++) {
+          const s = Math.max(-1, Math.min(1, float32Array[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        return pcm16;
+      }
+
+      function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+      }
+    </script>
+  </body>
+</html>

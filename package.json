@@ -1,0 +1,45 @@
+{
+  "name": "mastra-live-transcriber",
+  "version": "1.0.0",
+  "description": "Real-time transcription agent using Mastra, Whisper via Groq/OpenRouter",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "tsx scripts/demo.ts",
+    "discord:register": "tsx scripts/register-discord-commands.ts",
+    "discord:start": "tsx scripts/start-discord-bot.ts"
+  },
+  "keywords": ["mastra", "transcription", "whisper", "live-captions"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@mastra/core": "^0.1.0",
+    "express": "^4.18.2",
+    "ws": "^8.16.0",
+    "multer": "^1.4.5-lts.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "form-data": "^4.0.0",
+    "dotenv": "^16.4.1",
+    "cors": "^2.8.5",
+    "discord.js": "^14.14.1",
+    "@discordjs/voice": "^0.16.1",
+    "prism-media": "^1.3.5",
+    "libsodium-wrappers": "^0.7.11"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/ws": "^8.5.10",
+    "@types/multer": "^1.4.11",
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.11.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  }
+}
