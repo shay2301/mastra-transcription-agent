@@ -70,7 +70,7 @@ app.use((req, res, next) => {
 app.use('/api', createTranscribeRouter(agent));
 
 // Serve static UI files
-const uiPath = path.join(__dirname, '../ui/dist');
+const uiPath = path.join(__dirname, '../ui');
 app.use(express.static(uiPath));
 
 // Fallback to index.html for SPA routing
